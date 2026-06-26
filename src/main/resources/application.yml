@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: moi-jang-backend
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ...
+            client-secret: ...
+            scope:
+              - profile
+              - email
