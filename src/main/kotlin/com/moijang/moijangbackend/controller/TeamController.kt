@@ -67,12 +67,12 @@ class TeamController {
     @DeleteMapping("/{id}")
     fun deleteTeam(@PathVariable id: Long): ResponseEntity<ApiResponse<Unit>> {
         if (true) {
-            val res = ApiResponse.success("방 삭제 완료")
+            val res = ApiResponse.Success(Unit, "방 삭제 완료")
             return ResponseEntity.ok(res)
         } else {
             return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.failed("방 삭제 권한 부족"))
+                .body(ApiResponse.Failure("FORBIDDEN_ACCESS","방 삭제 권한 부족"))
         }
     }
 
@@ -90,6 +90,6 @@ class TeamController {
         @PathVariable teamId: Long,
         @PathVariable id: Long
     ): ApiResponse<Unit> {
-        return ApiResponse.success("해당 사용자를 강퇴했습니다")
+        return ApiResponse.Success(Unit, "해당 사용자를 강퇴했습니다")
     }
 }
