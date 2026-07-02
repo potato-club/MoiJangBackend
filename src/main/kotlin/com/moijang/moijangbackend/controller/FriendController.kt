@@ -1,6 +1,6 @@
 package com.moijang.moijangbackend.controller
 
-import com.moijang.moijangbackend.dto.ApiResponse
+import com.moijang.moijangbackend.global.common.ApiResponse
 import com.moijang.moijangbackend.dto.Friend
 import com.moijang.moijangbackend.dto.FriendsRequest
 import com.moijang.moijangbackend.dto.FriendsResponse

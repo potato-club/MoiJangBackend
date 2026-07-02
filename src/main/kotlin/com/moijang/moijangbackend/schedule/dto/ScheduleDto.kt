@@ -1,4 +1,4 @@
-package com.moijang.moijangbackend.dto
+package com.moijang.moijangbackend.schedule.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
@@ -16,7 +16,7 @@ data class PostScheduleRequest(
     @Schema(
         title = "일정 유형",
         description = "반복 일정일 때 true, 단일 일정일 때 false",
-        defaultValue = "false"
+        defaultValue = "false",
     )
     @JsonProperty("repeating")
     val isRepeating: Boolean,
@@ -24,13 +24,13 @@ data class PostScheduleRequest(
     @Schema(
         title = "날짜",
         description = "단일 일정에만 필요합니다",
-        defaultValue = "2026-07-01"
+        defaultValue = "2026-07-01",
     )
     val date: String? = null,
 
     @Schema(
         title = "요일",
-        description = "반복 일정에만 필요합니다"
+        description = "반복 일정에만 필요합니다",
     )
     val dayOfWeek: String? = null,
 
@@ -42,13 +42,14 @@ data class PostScheduleRequest(
     @Schema(title = "종료 시간", defaultValue = "14:00")
     val endTime: String,
 )
+
 data class PostScheduleResponse(
     @Schema(title = "생성된 일정 ID")
     val scheduleId: Long,
     val message: String,
 )
 
-data class Schedule(
+data class ScheduleResponse(
     @Schema(title = "일정 ID")
     val scheduleId: Long,
 
@@ -72,30 +73,11 @@ data class Schedule(
 
     @Schema(title = "종료 시간")
     val endTime: String,
+
+    @Schema(title = "팀 확정 일정 원본 팀 ID")
+    val sourceTeamId: Long?,
 )
+
 data class GetScheduleResponse(
-    val schedules: List<Schedule>,
-)
-
-data class BusyTime(
-    val startTime: String,
-    val endTime: String,
-    val busyUserCount: Int,
-)
-data class MergedSchedule(
-    val data: String,
-    val dayOfWeek: String,
-    val busyTime: List<BusyTime>,
-)
-data class MergedScheduleResponse(
-    val teamId: Long,
-    val roomType: String,
-    val mergedSchedules: List<MergedSchedule>
-)
-
-data class ConfirmScheduleRequest(
-    val confirmDate: String,
-    val startTime: String,
-    val endTime: String,
-    val eventTitle: String,
+    val schedules: List<ScheduleResponse>,
 )

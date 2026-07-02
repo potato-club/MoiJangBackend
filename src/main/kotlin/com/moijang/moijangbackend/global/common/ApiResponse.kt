@@ -1,37 +1,40 @@
-package com.moijang.moijangbackend.dto
+package com.moijang.moijangbackend.global.common
 
 data class ApiResponse<T>(
     val success: Boolean,
     val message: String,
-    val data: T? = null
+    val data: T? = null,
 ) {
     companion object {
         fun success(message: String): ApiResponse<Unit> {
             return ApiResponse(
                 success = true,
-                message,
-                data = null
+                message = message,
+                data = null,
             )
         }
+
         fun <T> success(message: String, data: T): ApiResponse<T> {
             return ApiResponse(
                 success = true,
-                message,
-                data
+                message = message,
+                data = data,
             )
         }
+
         fun failed(message: String): ApiResponse<Unit> {
             return ApiResponse(
                 success = false,
-                message,
-                data = null
+                message = message,
+                data = null,
             )
         }
+
         fun <T> failed(message: String, data: T): ApiResponse<T> {
             return ApiResponse(
                 success = false,
-                message,
-                data
+                message = message,
+                data = data,
             )
         }
     }
