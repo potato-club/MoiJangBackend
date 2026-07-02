@@ -45,7 +45,7 @@ class TeamController(
     @DeleteMapping("/{teamId}")
     fun deleteTeam(@PathVariable teamId: Long): ResponseEntity<ApiResponse<Unit>> {
         teamService.deleteTeam(currentUserId(), teamId)
-        return ResponseEntity.ok(ApiResponse.success("방 삭제 완료"))
+        return ResponseEntity.ok(ApiResponse.Ok("방 삭제 완료"))
     }
 
     @Operation(summary = "팀 가입")
@@ -61,7 +61,7 @@ class TeamController(
         @PathVariable userId: Long,
     ): ApiResponse<Unit> {
         teamService.kickMember(currentUserId(), teamId, userId)
-        return ApiResponse.success("해당 사용자를 강퇴했습니다")
+        return ApiResponse.Ok("해당 사용자를 강퇴했습니다")
     }
 
     companion object {

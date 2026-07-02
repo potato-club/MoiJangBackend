@@ -1,4 +1,4 @@
-package com.moijang.moijangbackend.dto
+package com.moijang.moijangbackend.global.common
 
 sealed class ApiResponse<out T> {
     data class Success<out T>(

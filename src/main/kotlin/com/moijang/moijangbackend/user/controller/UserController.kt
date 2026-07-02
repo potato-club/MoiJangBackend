@@ -1,7 +1,7 @@
-package com.moijang.moijangbackend.controller
+package com.moijang.moijangbackend.user.controller
 
-import com.moijang.moijangbackend.dto.ApiResponse
-import com.moijang.moijangbackend.dto.GetMyDataResponse
+import com.moijang.moijangbackend.global.common.ApiResponse
+import com.moijang.moijangbackend.user.dto.GetMyDataResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.GetMapping

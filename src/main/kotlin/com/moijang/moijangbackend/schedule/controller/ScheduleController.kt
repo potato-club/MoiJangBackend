@@ -52,7 +52,7 @@ class ScheduleController(
         @Valid @RequestBody body: PostScheduleRequest,
     ): ApiResponse<Unit> {
         scheduleService.updateSchedule(currentUserId(), scheduleId, body)
-        return ApiResponse.success("일정이 수정되었습니다.")
+        return ApiResponse.Ok("일정이 수정되었습니다.")
     }
 
     @Operation(summary = "일정 삭제")
@@ -61,7 +61,7 @@ class ScheduleController(
         @PathVariable scheduleId: Long,
     ): ApiResponse<Unit> {
         scheduleService.deleteSchedule(currentUserId(), scheduleId)
-        return ApiResponse.success("일정이 삭제되었습니다.")
+        return ApiResponse.Ok("일정이 삭제되었습니다.")
     }
 
     companion object {

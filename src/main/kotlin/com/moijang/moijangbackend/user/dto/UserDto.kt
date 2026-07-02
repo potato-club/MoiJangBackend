@@ -1,4 +1,4 @@
-package com.moijang.moijangbackend.dto
+package com.moijang.moijangbackend.user.dto
 
 data class GetMyDataResponse(
     val userId: Long,

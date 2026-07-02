@@ -1,9 +1,9 @@
-package com.moijang.moijangbackend.controller
+package com.moijang.moijangbackend.friend.controller
 
+import com.moijang.moijangbackend.friend.dto.Friend
+import com.moijang.moijangbackend.friend.dto.FriendsRequest
+import com.moijang.moijangbackend.friend.dto.FriendsResponse
 import com.moijang.moijangbackend.global.common.ApiResponse
-import com.moijang.moijangbackend.dto.Friend
-import com.moijang.moijangbackend.dto.FriendsRequest
-import com.moijang.moijangbackend.dto.FriendsResponse
 import com.moijang.moijangbackend.util.Validator
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
