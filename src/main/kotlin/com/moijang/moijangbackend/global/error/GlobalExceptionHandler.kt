@@ -9,16 +9,26 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException::class)
-    fun handleBusinessException(exception: BusinessException): ResponseEntity<ApiResponse<Unit>> {
+    fun handleBusinessException(exception: BusinessException): ResponseEntity<ApiResponse.Failure> {
         return ResponseEntity
             .status(exception.errorCode.status)
-            .body(ApiResponse.failed(exception.message))
+            .body(
+                ApiResponse.Failure(
+                    errorCode = exception.errorCode.name,
+                    errorMessage = exception.message,
+                ),
+            )
     }
 
     @ExceptionHandler(IllegalArgumentException::class)
-    fun handleIllegalArgumentException(exception: IllegalArgumentException): ResponseEntity<ApiResponse<Unit>> {
+    fun handleIllegalArgumentException(exception: IllegalArgumentException): ResponseEntity<ApiResponse.Failure> {
         return ResponseEntity
             .badRequest()
-            .body(ApiResponse.failed(exception.message ?: ErrorCode.INVALID_REQUEST.message))
+            .body(
+                ApiResponse.Failure(
+                    errorCode = ErrorCode.INVALID_REQUEST.name,
+                    errorMessage = exception.message ?: ErrorCode.INVALID_REQUEST.message,
+                ),
+            )
     }
 }
