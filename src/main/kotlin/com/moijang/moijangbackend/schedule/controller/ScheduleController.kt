@@ -25,15 +25,19 @@ class ScheduleController(
     private val scheduleService: ScheduleService,
 ) {
 
-    // TODO: Backend A OAuth/JWT 완료 후 @AuthenticationPrincipal AuthUser로 교체
+    // TODO: Google OAuth 완료 후 @AuthenticationPrincipal AuthUser로 교체
     private fun currentUserId(): Long = TEMP_USER_ID
 
     @Operation(summary = "새로운 일정 등록")
     @PostMapping
     fun postSchedule(
         @Valid @RequestBody body: PostScheduleRequest,
-    ): PostScheduleResponse {
-        return scheduleService.createSchedule(currentUserId(), body)
+    ): ApiResponse.Success<PostScheduleResponse> {
+        val response = scheduleService.createSchedule(currentUserId(), body)
+        return ApiResponse.Success(
+            data = response,
+            message = response.message,
+        )
     }
 
     @Operation(summary = "일정 목록 조회")
@@ -41,8 +45,8 @@ class ScheduleController(
     fun getSchedule(
         @RequestParam(name = "year") year: Int,
         @RequestParam(name = "month") month: Int,
-    ): GetScheduleResponse {
-        return scheduleService.getSchedules(currentUserId(), year, month)
+    ): ApiResponse.Success<GetScheduleResponse> {
+        return ApiResponse.Success(data = scheduleService.getSchedules(currentUserId(), year, month))
     }
 
     @Operation(summary = "일정 수정")
@@ -50,7 +54,7 @@ class ScheduleController(
     fun updateSchedule(
         @PathVariable scheduleId: Long,
         @Valid @RequestBody body: PostScheduleRequest,
-    ): ApiResponse<Unit> {
+    ): ApiResponse.Ok {
         scheduleService.updateSchedule(currentUserId(), scheduleId, body)
         return ApiResponse.Ok("일정이 수정되었습니다.")
     }
@@ -59,13 +63,12 @@ class ScheduleController(
     @DeleteMapping("/{scheduleId}")
     fun deleteSchedule(
         @PathVariable scheduleId: Long,
-    ): ApiResponse<Unit> {
+    ): ApiResponse.Ok {
         scheduleService.deleteSchedule(currentUserId(), scheduleId)
         return ApiResponse.Ok("일정이 삭제되었습니다.")
     }
 
     companion object {
-        // OAuth 연동 전 임시 사용자 ID — 로컬 테스트용 User seed 필요
         private const val TEMP_USER_ID = 1L
     }
 }
