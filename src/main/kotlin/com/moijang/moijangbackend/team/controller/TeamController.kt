@@ -61,7 +61,7 @@ class TeamController(
         @PathVariable userId: Long,
     ): ApiResponse<Unit> {
         teamService.kickMember(currentUserId(), teamId, userId)
-        return ApiResponse.Ok("해당 사용자를 강퇴했습니다")
+        return ApiResponse.Ok("사용자 $userId 강퇴했습니다")
     }
 
     companion object {

@@ -1,5 +1,6 @@
 package com.moijang.moijangbackend.config
 
+import org.springframework.boot.security.autoconfigure.web.servlet.PathRequest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -20,6 +21,9 @@ class SecurityConfig {
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .csrf { it.disable() }
+            .headers { headers ->
+                headers.frameOptions { it.sameOrigin() }
+            }
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers(
@@ -31,6 +35,7 @@ class SecurityConfig {
                         "/scalar/**",
                         "/favicon.ico",
                     ).permitAll()
+                    .requestMatchers(PathRequest.toH2Console()).permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2Login { oauth -> }

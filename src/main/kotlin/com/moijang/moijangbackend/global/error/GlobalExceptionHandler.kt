@@ -12,13 +12,13 @@ class GlobalExceptionHandler {
     fun handleBusinessException(exception: BusinessException): ResponseEntity<ApiResponse<Unit>> {
         return ResponseEntity
             .status(exception.errorCode.status)
-            .body(ApiResponse.failed(exception.message))
+            .body(ApiResponse.Failure(exception.errorCode.name, exception.message))
     }
 
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleIllegalArgumentException(exception: IllegalArgumentException): ResponseEntity<ApiResponse<Unit>> {
         return ResponseEntity
             .badRequest()
-            .body(ApiResponse.failed(exception.message ?: ErrorCode.INVALID_REQUEST.message))
+            .body(ApiResponse.Failure("ILLEGAL_ARGUMENT", exception.message ?: ErrorCode.INVALID_REQUEST.message))
     }
 }
