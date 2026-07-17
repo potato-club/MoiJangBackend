@@ -14,7 +14,7 @@ class UserService(private val userRepository: UserRepository) {
         if (!isValidNickname(newNickname))
             throw BusinessException(ErrorCode.INVALID_REQUEST, "유효하지 않은 이름")
         val user =
-            userRepository.findByIdOrNull(id) ?: throw BusinessException(ErrorCode.USER_NOT_FOUND, "User not found");
+            userRepository.findByIdOrNull(id) ?: throw BusinessException(ErrorCode.USER_NOT_FOUND, "User not found")
         user.nickname = newNickname
         return ApiResponse.Ok("이름이 변경되었습니다")
     }

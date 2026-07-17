@@ -2,7 +2,6 @@ package com.moijang.moijangbackend.user.repository
 
 import com.moijang.moijangbackend.user.entity.OAuthProvider
 import com.moijang.moijangbackend.user.entity.User
-import jakarta.transaction.Transactional
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.Optional
 
