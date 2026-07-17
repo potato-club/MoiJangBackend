@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import java.time.LocalDateTime
 
 @Entity
 @Table(name = "users")
@@ -16,7 +17,7 @@ class User(
     val email: String,
 
     @Column(nullable = false)
-    val nickname: String,
+    var nickname: String,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -27,7 +28,7 @@ class User(
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    val role: UserRole = UserRole.USER,
+    var role: UserRole = UserRole.USER,
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
