@@ -21,7 +21,7 @@ data class CreateTeamRequest(
 
     @field:NotNull(message = "공개 여부가 누락되었습니다.")
     @Schema(title = "공개 여부", description = "true: 공개, false: 비공개", defaultValue = "false")
-    val isPublic: Boolean,
+    val isPublic: Boolean = false,
 
     @field:NotBlank(message = "비밀번호가 누락되었습니다.")
     @Schema(title = "팀방 비밀번호", defaultValue = "potato123")
@@ -39,73 +39,25 @@ data class CreateTeamRequest(
 data class CreateTeamResponse(
     val teamId: Long,
     val inviteCode: String,
-    val message: String,
+)
+
+data class TeamParticipantResponse(
+    val userId: Long,
+    val name: String,
 )
 
 data class TeamsResponse(
     val teamId: Long,
     val title: String,
     val roomType: RoomType,
+    val maxParticipants: Int,
     val isPublic: Boolean,
     val startDate: String,
     val endDate: String,
     val leaderId: Long,
-    val participantIds: List<Long>,
-)
-
-data class JoinTeamRequest(
-    @field:NotBlank(message = "초대 코드가 누락되었습니다.")
-    val inviteCode: String,
-
-    @field:NotBlank(message = "비밀번호가 누락되었습니다.")
-    val password: String,
+    val participants: List<TeamParticipantResponse>,
 )
 
 data class JoinTeamResponse(
     val teamId: Long,
-    val message: String,
-)
-
-data class BusyTime(
-    val startTime: String,
-    val endTime: String,
-    val busyUserCount: Int,
-)
-
-data class MergedSchedule(
-    val date: String?,
-    val dayOfWeek: String?,
-    val busyTimes: List<BusyTime>,
-)
-
-data class MergedScheduleResponse(
-    val teamId: Long,
-    val roomType: RoomType,
-    val mergedSchedules: List<MergedSchedule>,
-)
-
-data class ConfirmScheduleRequest(
-    val confirmDate: String,
-    val startTime: String,
-    val endTime: String,
-    val eventTitle: String,
-)
-
-data class AvailabilityUserSummary(
-    val userId: Long,
-    val nickname: String,
-)
-
-data class AvailabilitySlotSummary(
-    val date: String?,
-    val dayOfWeek: String?,
-    val startTime: String,
-    val endTime: String,
-    val selectedUsers: List<AvailabilityUserSummary>,
-)
-
-data class AvailabilitySummaryResponse(
-    val teamId: Long,
-    val roomType: RoomType,
-    val slots: List<AvailabilitySlotSummary>,
 )

@@ -8,6 +8,7 @@ enum class ErrorCode(
 ) {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다"),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다"),
+    FRIEND_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 친구가 없습니다"),
     SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "일정을 찾을 수 없습니다"),
     SCHEDULE_FORBIDDEN(HttpStatus.FORBIDDEN, "일정에 대한 권한이 없습니다"),
     TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, "팀을 찾을 수 없습니다"),

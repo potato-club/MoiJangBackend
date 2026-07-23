@@ -4,8 +4,8 @@ import com.moijang.moijangbackend.global.error.BusinessException
 import com.moijang.moijangbackend.global.error.ErrorCode
 import com.moijang.moijangbackend.team.dto.CreateTeamRequest
 import com.moijang.moijangbackend.team.dto.CreateTeamResponse
-import com.moijang.moijangbackend.team.dto.JoinTeamRequest
 import com.moijang.moijangbackend.team.dto.JoinTeamResponse
+import com.moijang.moijangbackend.team.dto.TeamParticipantResponse
 import com.moijang.moijangbackend.team.dto.TeamsResponse
 import com.moijang.moijangbackend.team.entity.Team
 import com.moijang.moijangbackend.team.entity.TeamUser
@@ -58,25 +58,30 @@ class TeamService(
         return CreateTeamResponse(
             teamId = team.id,
             inviteCode = team.inviteCode,
-            message = "방이 생성되었습니다",
         )
     }
 
     @Transactional(readOnly = true)
     fun getTeam(teamId: Long): TeamsResponse {
         val team = findTeam(teamId)
-        val participantIds = teamUserRepository.findAllByTeam_Id(teamId)
-            .map { it.user.id }
+        val participants = teamUserRepository.findAllByTeam_Id(teamId)
+            .map {
+                TeamParticipantResponse(
+                    userId = it.user.id,
+                    name = it.user.nickname,
+                )
+            }
 
         return TeamsResponse(
             teamId = team.id,
             title = team.title,
             roomType = team.roomType,
+            maxParticipants = team.maxParticipants,
             isPublic = team.isPublic,
             startDate = team.startDate.toString(),
             endDate = team.endDate.toString(),
             leaderId = team.leader.id,
-            participantIds = participantIds,
+            participants = participants,
         )
     }
 
@@ -90,14 +95,10 @@ class TeamService(
     }
 
     @Transactional
-    fun joinTeam(userId: Long, request: JoinTeamRequest): JoinTeamResponse {
+    fun joinTeam(userId: Long, inviteCode: String): JoinTeamResponse {
         val user = findUser(userId)
-        val team = teamRepository.findByInviteCode(request.inviteCode)
+        val team = teamRepository.findByInviteCode(inviteCode)
             ?: throw BusinessException(ErrorCode.TEAM_NOT_FOUND)
-
-        if (!passwordEncoder.matches(request.password, team.passwordHash)) {
-            throw BusinessException(ErrorCode.TEAM_PASSWORD_MISMATCH)
-        }
 
         if (teamUserRepository.existsByTeam_IdAndUser_Id(team.id, userId)) {
             throw BusinessException(ErrorCode.ALREADY_TEAM_MEMBER)
@@ -114,10 +115,7 @@ class TeamService(
             ),
         )
 
-        return JoinTeamResponse(
-            teamId = team.id,
-            message = "가입되었습니다",
-        )
+        return JoinTeamResponse(teamId = team.id)
     }
 
     @Transactional

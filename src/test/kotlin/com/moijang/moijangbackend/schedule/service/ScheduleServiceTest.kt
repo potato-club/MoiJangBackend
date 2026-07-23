@@ -95,7 +95,7 @@ class ScheduleServiceTest {
 
         val result = scheduleService.getSchedules(user.id, 2026, 7)
 
-        assertEquals(2, result.schedules.size)
+        assertEquals(2, result.size)
     }
 
     @Test

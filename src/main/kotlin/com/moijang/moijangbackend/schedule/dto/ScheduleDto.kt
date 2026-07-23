@@ -1,6 +1,7 @@
 package com.moijang.moijangbackend.schedule.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.moijang.moijangbackend.team.entity.RoomType
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotBlank
 
@@ -18,7 +19,8 @@ data class PostScheduleRequest(
         description = "반복 일정일 때 true, 단일 일정일 때 false",
         defaultValue = "false",
     )
-    @JsonProperty("repeating")
+    @get:JsonProperty("isRepeating")
+    @param:JsonProperty("isRepeating")
     val isRepeating: Boolean,
 
     @Schema(
@@ -46,7 +48,6 @@ data class PostScheduleRequest(
 data class PostScheduleResponse(
     @Schema(title = "생성된 일정 ID")
     val scheduleId: Long,
-    val message: String,
 )
 
 data class ScheduleResponse(
@@ -60,6 +61,7 @@ data class ScheduleResponse(
     val categoryColor: String,
 
     @Schema(title = "일정 유형", description = "반복 일정일 때 true, 단일 일정일 때 false")
+    @get:JsonProperty("isRepeating")
     val isRepeating: Boolean,
 
     @Schema(title = "날짜", description = "단일 일정에만 필요합니다")
@@ -78,6 +80,34 @@ data class ScheduleResponse(
     val sourceTeamId: Long?,
 )
 
-data class GetScheduleResponse(
-    val schedules: List<ScheduleResponse>,
+data class BusyTime(
+    val startTime: String,
+    val endTime: String,
+    val busyUserCount: Int,
+)
+
+data class MergedSchedule(
+    val date: String?,
+    val dayOfWeek: String?,
+    val busyTimes: List<BusyTime>,
+)
+
+data class MergedScheduleResponse(
+    val teamId: Long,
+    val roomType: RoomType,
+    val mergedSchedules: List<MergedSchedule>,
+)
+
+data class ConfirmScheduleRequest(
+    @field:NotBlank(message = "확정 날짜가 누락되었습니다.")
+    val confirmedDate: String,
+
+    @field:NotBlank(message = "시작 시간이 누락되었습니다.")
+    val startTime: String,
+
+    @field:NotBlank(message = "종료 시간이 누락되었습니다.")
+    val endTime: String,
+
+    @field:NotBlank(message = "일정 제목이 누락되었습니다.")
+    val eventTitle: String,
 )

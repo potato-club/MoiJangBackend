@@ -90,7 +90,7 @@ class BackendBFlowIntegrationTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.teamId").exists())
             .andExpect(jsonPath("$.data.inviteCode").exists())
-            .andExpect(jsonPath("$.message").value("방이 생성되었습니다"))
+            .andExpect(jsonPath("$.message").value("방이 성공적으로 생성되었습니다."))
             .andReturn()
 
         val teamId = objectMapper.readTree(createResponse.response.contentAsString)
@@ -102,6 +102,8 @@ class BackendBFlowIntegrationTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.title").value("모이장 회의"))
             .andExpect(jsonPath("$.data.roomType").value("SHORT_TERM"))
+            .andExpect(jsonPath("$.data.maxParticipants").value(10))
+            .andExpect(jsonPath("$.data.participants").isArray)
             .andExpect(jsonPath("$.data.leaderId").value(1))
 
         mockMvc.perform(delete("/api/v1/teams/$teamId"))
@@ -115,7 +117,7 @@ class BackendBFlowIntegrationTest {
             {
               "title": "감자볶음밥 회의",
               "categoryColor": "#FF0000",
-              "repeating": false,
+              "isRepeating": false,
               "date": "2026-07-10",
               "startTime": "13:00",
               "endTime": "14:00"
@@ -129,7 +131,7 @@ class BackendBFlowIntegrationTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.scheduleId").exists())
-            .andExpect(jsonPath("$.message").value("일정이 등록되었습니다"))
+            .andExpect(jsonPath("$.message").value("일정이 성공적으로 등록되었습니다."))
             .andReturn()
 
         val scheduleId = objectMapper.readTree(createResponse.response.contentAsString)
@@ -139,14 +141,15 @@ class BackendBFlowIntegrationTest {
 
         mockMvc.perform(get("/api/v1/schedules?year=2026&month=7"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.schedules").isArray)
-            .andExpect(jsonPath("$.data.schedules[0].title").value("감자볶음밥 회의"))
+            .andExpect(jsonPath("$.data").isArray)
+            .andExpect(jsonPath("$.data[0].title").value("감자볶음밥 회의"))
+            .andExpect(jsonPath("$.data[0].isRepeating").value(false))
 
         val updateBody = """
             {
               "title": "감자전 부치는 날",
               "categoryColor": "#FF0000",
-              "repeating": false,
+              "isRepeating": false,
               "date": "2026-07-10",
               "startTime": "15:00",
               "endTime": "16:00"
@@ -159,11 +162,11 @@ class BackendBFlowIntegrationTest {
                 .content(updateBody),
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.message").value("일정이 수정되었습니다."))
+            .andExpect(jsonPath("$.message").value("일정이 성공적으로 수정되었습니다."))
 
         mockMvc.perform(delete("/api/v1/schedules/$scheduleId"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.message").value("일정이 삭제되었습니다."))
+            .andExpect(jsonPath("$.message").value("일정이 성공적으로 삭제되었습니다."))
     }
 
     @Test
@@ -196,7 +199,7 @@ class BackendBFlowIntegrationTest {
                     {
                       "title": "킥오프 미팅",
                       "categoryColor": "#00FF00",
-                      "repeating": false,
+                      "isRepeating": false,
                       "date": "2026-07-05",
                       "startTime": "18:00",
                       "endTime": "19:00"
@@ -209,7 +212,7 @@ class BackendBFlowIntegrationTest {
 
         mockMvc.perform(get("/api/v1/schedules?year=2026&month=7"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.schedules[0].title").value("킥오프 미팅"))
+            .andExpect(jsonPath("$.data[0].title").value("킥오프 미팅"))
     }
 
     @Test

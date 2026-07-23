@@ -3,7 +3,6 @@ package com.moijang.moijangbackend.team.service
 import com.moijang.moijangbackend.global.error.BusinessException
 import com.moijang.moijangbackend.global.error.ErrorCode
 import com.moijang.moijangbackend.team.dto.CreateTeamRequest
-import com.moijang.moijangbackend.team.dto.JoinTeamRequest
 import com.moijang.moijangbackend.team.entity.RoomType
 import com.moijang.moijangbackend.team.repository.TeamRepository
 import com.moijang.moijangbackend.team.repository.TeamUserRepository
@@ -71,36 +70,24 @@ class TeamServiceTest {
     }
 
     @Test
-    fun `올바른 비밀번호로 팀에 가입할 수 있다`() {
+    fun `초대 코드로 팀에 가입할 수 있다`() {
         val created = teamService.createTeam(leader.id, createTeamRequest(maxParticipants = 3))
 
-        val joined = teamService.joinTeam(
-            member.id,
-            JoinTeamRequest(
-                inviteCode = created.inviteCode,
-                password = "potato123",
-            ),
-        )
+        val joined = teamService.joinTeam(member.id, created.inviteCode)
 
         assertEquals(created.teamId, joined.teamId)
         assertTrue(teamUserRepository.existsByTeam_IdAndUser_Id(created.teamId, member.id))
     }
 
     @Test
-    fun `비밀번호가 틀리면 가입할 수 없다`() {
-        val created = teamService.createTeam(leader.id, createTeamRequest())
+    fun `잘못된 초대 코드로는 가입할 수 없다`() {
+        teamService.createTeam(leader.id, createTeamRequest())
 
         val exception = org.junit.jupiter.api.Assertions.assertThrows(BusinessException::class.java) {
-            teamService.joinTeam(
-                member.id,
-                JoinTeamRequest(
-                    inviteCode = created.inviteCode,
-                    password = "wrong-password",
-                ),
-            )
+            teamService.joinTeam(member.id, "ZZZZ")
         }
 
-        assertEquals(ErrorCode.TEAM_PASSWORD_MISMATCH, exception.errorCode)
+        assertEquals(ErrorCode.TEAM_NOT_FOUND, exception.errorCode)
     }
 
     @Test
@@ -109,13 +96,7 @@ class TeamServiceTest {
             leader.id,
             createTeamRequest(maxParticipants = 2),
         )
-        teamService.joinTeam(
-            member.id,
-            JoinTeamRequest(
-                inviteCode = created.inviteCode,
-                password = "potato123",
-            ),
-        )
+        teamService.joinTeam(member.id, created.inviteCode)
 
         val extraUser = userRepository.save(
             User(
@@ -128,13 +109,7 @@ class TeamServiceTest {
         )
 
         val exception = org.junit.jupiter.api.Assertions.assertThrows(BusinessException::class.java) {
-            teamService.joinTeam(
-                extraUser.id,
-                JoinTeamRequest(
-                    inviteCode = created.inviteCode,
-                    password = "potato123",
-                ),
-            )
+            teamService.joinTeam(extraUser.id, created.inviteCode)
         }
 
         assertEquals(ErrorCode.TEAM_FULL, exception.errorCode)
@@ -163,13 +138,7 @@ class TeamServiceTest {
     @Test
     fun `방장은 멤버를 강퇴할 수 있다`() {
         val created = teamService.createTeam(leader.id, createTeamRequest(maxParticipants = 3))
-        teamService.joinTeam(
-            member.id,
-            JoinTeamRequest(
-                inviteCode = created.inviteCode,
-                password = "potato123",
-            ),
-        )
+        teamService.joinTeam(member.id, created.inviteCode)
 
         teamService.kickMember(leader.id, created.teamId, member.id)
 
@@ -200,6 +169,19 @@ class TeamServiceTest {
         }
 
         assertEquals(ErrorCode.INVALID_TEAM_PERIOD, exception.errorCode)
+    }
+
+    @Test
+    fun `팀 조회 시 참여자 이름과 최대 인원을 포함한다`() {
+        val created = teamService.createTeam(leader.id, createTeamRequest(maxParticipants = 6))
+        teamService.joinTeam(member.id, created.inviteCode)
+
+        val team = teamService.getTeam(created.teamId)
+
+        assertEquals(6, team.maxParticipants)
+        assertEquals(2, team.participants.size)
+        assertEquals("방장", team.participants.first { it.userId == leader.id }.name)
+        assertEquals("멤버", team.participants.first { it.userId == member.id }.name)
     }
 
     private fun createTeamRequest(

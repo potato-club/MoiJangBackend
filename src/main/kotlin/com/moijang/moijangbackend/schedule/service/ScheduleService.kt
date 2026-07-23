@@ -2,7 +2,6 @@ package com.moijang.moijangbackend.schedule.service
 
 import com.moijang.moijangbackend.global.error.BusinessException
 import com.moijang.moijangbackend.global.error.ErrorCode
-import com.moijang.moijangbackend.schedule.dto.GetScheduleResponse
 import com.moijang.moijangbackend.schedule.dto.PostScheduleRequest
 import com.moijang.moijangbackend.schedule.dto.PostScheduleResponse
 import com.moijang.moijangbackend.schedule.dto.ScheduleResponse
@@ -43,14 +42,11 @@ class ScheduleService(
             ),
         )
 
-        return PostScheduleResponse(
-            scheduleId = schedule.id,
-            message = "일정이 등록되었습니다",
-        )
+        return PostScheduleResponse(scheduleId = schedule.id)
     }
 
     @Transactional(readOnly = true)
-    fun getSchedules(userId: Long, year: Int, month: Int): GetScheduleResponse {
+    fun getSchedules(userId: Long, year: Int, month: Int): List<ScheduleResponse> {
         findUser(userId)
 
         val yearMonth = YearMonth.of(year, month)
@@ -61,11 +57,9 @@ class ScheduleService(
         )
         val repeatingSchedules = personalScheduleRepository.findAllByUser_IdAndIsRepeatingTrue(userId)
 
-        val schedules = (datedSchedules + repeatingSchedules)
+        return (datedSchedules + repeatingSchedules)
             .distinctBy { it.id }
             .map(::toScheduleResponse)
-
-        return GetScheduleResponse(schedules = schedules)
     }
 
     @Transactional

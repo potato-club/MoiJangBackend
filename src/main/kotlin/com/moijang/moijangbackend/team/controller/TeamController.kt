@@ -1,9 +1,9 @@
 package com.moijang.moijangbackend.team.controller
 
+import com.moijang.moijangbackend.global.auth.CurrentUser
 import com.moijang.moijangbackend.global.common.ApiResponse
 import com.moijang.moijangbackend.team.dto.CreateTeamRequest
 import com.moijang.moijangbackend.team.dto.CreateTeamResponse
-import com.moijang.moijangbackend.team.dto.JoinTeamRequest
 import com.moijang.moijangbackend.team.dto.JoinTeamResponse
 import com.moijang.moijangbackend.team.dto.TeamsResponse
 import com.moijang.moijangbackend.team.service.TeamService
@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Tag(name = "Team API")
@@ -25,16 +26,12 @@ class TeamController(
     private val teamService: TeamService,
 ) {
 
-    // TODO: Google OAuth 완료 후 @AuthenticationPrincipal AuthUser로 교체
-    private fun currentUserId(): Long = TEMP_USER_ID
-
     @Operation(summary = "팀 생성")
     @PostMapping
     fun createTeam(@Valid @RequestBody req: CreateTeamRequest): ApiResponse.Success<CreateTeamResponse> {
-        val response = teamService.createTeam(currentUserId(), req)
         return ApiResponse.Success(
-            data = response,
-            message = response.message,
+            data = teamService.createTeam(CurrentUser.id(), req),
+            message = "방이 성공적으로 생성되었습니다.",
         )
     }
 
@@ -47,31 +44,28 @@ class TeamController(
     @Operation(summary = "팀 삭제")
     @DeleteMapping("/{teamId}")
     fun deleteTeam(@PathVariable teamId: Long): ApiResponse.Ok {
-        teamService.deleteTeam(currentUserId(), teamId)
+        teamService.deleteTeam(CurrentUser.id(), teamId)
         return ApiResponse.Ok("방 삭제 완료")
     }
 
-    @Operation(summary = "팀 가입")
+    @Operation(summary = "초대 코드로 팀 가입")
     @PostMapping("/join")
-    fun joinTeam(@Valid @RequestBody body: JoinTeamRequest): ApiResponse.Success<JoinTeamResponse> {
-        val response = teamService.joinTeam(currentUserId(), body)
+    fun joinTeam(
+        @RequestParam(name = "code") code: String,
+    ): ApiResponse.Success<JoinTeamResponse> {
         return ApiResponse.Success(
-            data = response,
-            message = response.message,
+            data = teamService.joinTeam(CurrentUser.id(), code),
+            message = "방에 성공적으로 참여했습니다.",
         )
     }
 
     @Operation(summary = "팀 멤버 강퇴")
-    @DeleteMapping("/{teamId}/members/{userId}")
+    @DeleteMapping("/{teamId}/kick/{userId}")
     fun kickUserFromTeam(
         @PathVariable teamId: Long,
         @PathVariable userId: Long,
     ): ApiResponse.Ok {
-        teamService.kickMember(currentUserId(), teamId, userId)
-        return ApiResponse.Ok("사용자 $userId 강퇴했습니다")
-    }
-
-    companion object {
-        private const val TEMP_USER_ID = 1L
+        teamService.kickMember(CurrentUser.id(), teamId, userId)
+        return ApiResponse.Ok("해당 유저를 강퇴 처리했습니다.")
     }
 }

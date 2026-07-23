@@ -5,18 +5,18 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 
+/**
+ * [소유: 인증 담당]
+ * OAuth2 / JWT / 인가 규칙을 이 클래스에서 구현한다.
+ * 팀·일정 담당자는 수정하지 말고, 컨트롤러에서는 [com.moijang.moijangbackend.global.auth.CurrentUser]만 호출한다.
+ */
 @Configuration
 @EnableWebSecurity
 class SecurityConfig {
 
-    @Bean
-    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
-
-    // 임시로 보안 끔
+    // TODO(인증 담당): JWT 필터, OAuth 성공 핸들러, /api/** authenticated 전환
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
@@ -38,7 +38,7 @@ class SecurityConfig {
                     .requestMatchers(PathRequest.toH2Console()).permitAll()
                     .anyRequest().authenticated()
             }
-            .oauth2Login { oauth -> }
+            .oauth2Login { }
 
         return http.build()
     }
