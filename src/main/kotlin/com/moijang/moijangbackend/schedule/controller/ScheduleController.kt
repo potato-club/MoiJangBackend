@@ -2,6 +2,8 @@ package com.moijang.moijangbackend.schedule.controller
 
 import com.moijang.moijangbackend.global.auth.CurrentUser
 import com.moijang.moijangbackend.global.common.ApiResponse
+import com.moijang.moijangbackend.schedule.dto.ConfirmScheduleRequest
+import com.moijang.moijangbackend.schedule.dto.MergedScheduleResponse
 import com.moijang.moijangbackend.schedule.dto.PostScheduleRequest
 import com.moijang.moijangbackend.schedule.dto.PostScheduleResponse
 import com.moijang.moijangbackend.schedule.dto.ScheduleResponse
@@ -44,6 +46,26 @@ class ScheduleController(
         @RequestParam(name = "month") month: Int,
     ): ApiResponse.Success<List<ScheduleResponse>> {
         return ApiResponse.Success(data = scheduleService.getSchedules(CurrentUser.id(), year, month))
+    }
+
+    @Operation(summary = "팀원 일정 병합 조회")
+    @GetMapping("/teams/{teamId}/merged")
+    fun getMergedTeamSchedules(
+        @PathVariable teamId: Long,
+    ): ApiResponse.Success<MergedScheduleResponse> {
+        return ApiResponse.Success(
+            data = scheduleService.getMergedTeamSchedules(CurrentUser.id(), teamId),
+        )
+    }
+
+    @Operation(summary = "팀 약속 확정")
+    @PostMapping("/teams/{teamId}/confirm")
+    fun confirmTeamSchedule(
+        @PathVariable teamId: Long,
+        @Valid @RequestBody body: ConfirmScheduleRequest,
+    ): ApiResponse.Ok {
+        scheduleService.confirmTeamSchedule(CurrentUser.id(), teamId, body)
+        return ApiResponse.Ok("약속이 성공적으로 확정되었습니다.")
     }
 
     @Operation(summary = "일정 수정")

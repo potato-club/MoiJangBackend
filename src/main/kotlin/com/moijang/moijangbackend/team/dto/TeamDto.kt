@@ -39,6 +39,7 @@ data class CreateTeamRequest(
 data class CreateTeamResponse(
     val teamId: Long,
     val inviteCode: String,
+    val inviteLink: String,
 )
 
 data class TeamParticipantResponse(
@@ -55,9 +56,16 @@ data class TeamsResponse(
     val startDate: String,
     val endDate: String,
     val leaderId: Long,
+    val inviteCode: String,
+    val inviteLink: String,
     val participants: List<TeamParticipantResponse>,
 )
 
 data class JoinTeamResponse(
     val teamId: Long,
+)
+
+data class InviteCodeResponse(
+    val inviteCode: String,
+    val inviteLink: String,
 )

@@ -1,6 +1,7 @@
 package com.moijang.moijangbackend
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.moijang.moijangbackend.availability.repository.AvailabilityRepository
 import com.moijang.moijangbackend.schedule.repository.PersonalScheduleRepository
 import com.moijang.moijangbackend.team.repository.TeamRepository
 import com.moijang.moijangbackend.team.repository.TeamUserRepository
@@ -45,12 +46,16 @@ class BackendBFlowIntegrationTest {
     @Autowired
     private lateinit var personalScheduleRepository: PersonalScheduleRepository
 
+    @Autowired
+    private lateinit var availabilityRepository: AvailabilityRepository
+
     private lateinit var mockMvc: MockMvc
 
     @BeforeEach
     fun setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build()
 
+        availabilityRepository.deleteAll()
         teamUserRepository.deleteAll()
         personalScheduleRepository.deleteAll()
         teamRepository.deleteAll()
@@ -221,5 +226,171 @@ class BackendBFlowIntegrationTest {
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.errorCode").value("TEAM_NOT_FOUND"))
             .andExpect(jsonPath("$.errorMessage").exists())
+    }
+
+    @Test
+    fun `팀 일정 병합 API는 30분 슬롯을 반환한다`() {
+        val createTeamResponse = mockMvc.perform(
+            post("/api/v1/teams")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "병합 API 테스트",
+                      "roomType": "SHORT_TERM",
+                      "maxParticipants": 5,
+                      "isPublic": false,
+                      "password": "potato123",
+                      "startDate": "2026-07-10",
+                      "endDate": "2026-07-10"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andReturn()
+
+        val teamId = objectMapper.readTree(createTeamResponse.response.contentAsString)
+            .path("data")
+            .path("teamId")
+            .asLong()
+
+        mockMvc.perform(
+            post("/api/v1/schedules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "병합할 일정",
+                      "categoryColor": "#FF0000",
+                      "isRepeating": false,
+                      "date": "2026-07-10",
+                      "startTime": "13:00",
+                      "endTime": "14:00"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        mockMvc.perform(get("/api/v1/schedules/teams/$teamId/merged"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.teamId").value(teamId))
+            .andExpect(jsonPath("$.data.roomType").value("SHORT_TERM"))
+            .andExpect(jsonPath("$.data.mergedSchedules[0].date").value("2026-07-10"))
+            .andExpect(jsonPath("$.data.mergedSchedules[0].busyTimes[0].startTime").value("13:00"))
+            .andExpect(jsonPath("$.data.mergedSchedules[0].busyTimes[0].endTime").value("13:30"))
+            .andExpect(jsonPath("$.data.mergedSchedules[0].busyTimes[0].busyUserCount").value(1))
+            .andExpect(jsonPath("$.data.mergedSchedules[0].busyTimes[1].startTime").value("13:30"))
+            .andExpect(jsonPath("$.data.mergedSchedules[0].busyTimes[1].endTime").value("14:00"))
+    }
+
+    @Test
+    fun `팀 약속 확정 후 개인 일정에서 확인할 수 있다`() {
+        val createTeamResponse = mockMvc.perform(
+            post("/api/v1/teams")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "약속 확정 API 테스트",
+                      "roomType": "RECURRING",
+                      "maxParticipants": 5,
+                      "isPublic": false,
+                      "password": "potato123",
+                      "startDate": "2026-07-01",
+                      "endDate": "2026-07-31"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andReturn()
+
+        val teamId = objectMapper.readTree(createTeamResponse.response.contentAsString)
+            .path("data")
+            .path("teamId")
+            .asLong()
+
+        mockMvc.perform(
+            post("/api/v1/schedules/teams/$teamId/confirm")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "confirmedDate": "2026-07-10",
+                      "startTime": "13:00",
+                      "endTime": "14:00",
+                      "eventTitle": "확정된 팀 약속"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.message").value("약속이 성공적으로 확정되었습니다."))
+
+        mockMvc.perform(get("/api/v1/schedules?year=2026&month=7"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data[0].title").value("확정된 팀 약속"))
+            .andExpect(jsonPath("$.data[0].isRepeating").value(false))
+            .andExpect(jsonPath("$.data[0].date").value("2026-07-10"))
+            .andExpect(jsonPath("$.data[0].categoryColor").value("#4A90E2"))
+            .andExpect(jsonPath("$.data[0].sourceTeamId").value(teamId))
+    }
+
+    @Test
+    fun `단기 팀 희망 시간을 저장하고 요약 조회할 수 있다`() {
+        val createTeamResponse = mockMvc.perform(
+            post("/api/v1/teams")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "희망 시간 API 테스트",
+                      "roomType": "SHORT_TERM",
+                      "maxParticipants": 5,
+                      "isPublic": false,
+                      "password": "potato123",
+                      "startDate": "2026-07-01",
+                      "endDate": "2026-07-31"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andReturn()
+
+        val teamId = objectMapper.readTree(createTeamResponse.response.contentAsString)
+            .path("data")
+            .path("teamId")
+            .asLong()
+
+        mockMvc.perform(
+            put("/api/v1/teams/$teamId/availabilities")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    [
+                      {
+                        "date": "2026-07-10",
+                        "startTime": "13:00",
+                        "endTime": "14:00"
+                      }
+                    ]
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.message").value("희망 시간이 성공적으로 저장되었습니다."))
+
+        mockMvc.perform(get("/api/v1/teams/$teamId/availabilities"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.teamId").value(teamId))
+            .andExpect(jsonPath("$.data.roomType").value("SHORT_TERM"))
+            .andExpect(jsonPath("$.data.slots[0].date").value("2026-07-10"))
+            .andExpect(jsonPath("$.data.slots[0].dayOfWeek").doesNotExist())
+            .andExpect(jsonPath("$.data.slots[0].startTime").value("13:00"))
+            .andExpect(jsonPath("$.data.slots[0].endTime").value("14:00"))
+            .andExpect(jsonPath("$.data.slots[0].selectedUsers[0].userId").value(1))
     }
 }

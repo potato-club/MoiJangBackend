@@ -4,6 +4,7 @@ import com.moijang.moijangbackend.global.error.BusinessException
 import com.moijang.moijangbackend.global.error.ErrorCode
 import com.moijang.moijangbackend.team.dto.CreateTeamRequest
 import com.moijang.moijangbackend.team.dto.CreateTeamResponse
+import com.moijang.moijangbackend.team.dto.InviteCodeResponse
 import com.moijang.moijangbackend.team.dto.JoinTeamResponse
 import com.moijang.moijangbackend.team.dto.TeamParticipantResponse
 import com.moijang.moijangbackend.team.dto.TeamsResponse
@@ -13,6 +14,7 @@ import com.moijang.moijangbackend.team.repository.TeamRepository
 import com.moijang.moijangbackend.team.repository.TeamUserRepository
 import com.moijang.moijangbackend.user.entity.User
 import com.moijang.moijangbackend.user.repository.UserRepository
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -24,6 +26,8 @@ class TeamService(
     private val teamUserRepository: TeamUserRepository,
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    @Value("\${app.invite.base-url:http://localhost:5173/join}")
+    private val inviteBaseUrl: String,
 ) {
 
     @Transactional
@@ -58,6 +62,7 @@ class TeamService(
         return CreateTeamResponse(
             teamId = team.id,
             inviteCode = team.inviteCode,
+            inviteLink = buildInviteLink(team.inviteCode),
         )
     }
 
@@ -81,6 +86,8 @@ class TeamService(
             startDate = team.startDate.toString(),
             endDate = team.endDate.toString(),
             leaderId = team.leader.id,
+            inviteCode = team.inviteCode,
+            inviteLink = buildInviteLink(team.inviteCode),
             participants = participants,
         )
     }
@@ -95,10 +102,14 @@ class TeamService(
     }
 
     @Transactional
-    fun joinTeam(userId: Long, inviteCode: String): JoinTeamResponse {
+    fun joinTeam(userId: Long, inviteCode: String, password: String): JoinTeamResponse {
         val user = findUser(userId)
         val team = teamRepository.findByInviteCode(inviteCode)
             ?: throw BusinessException(ErrorCode.TEAM_NOT_FOUND)
+
+        if (!passwordEncoder.matches(password, team.passwordHash)) {
+            throw BusinessException(ErrorCode.TEAM_PASSWORD_MISMATCH)
+        }
 
         if (teamUserRepository.existsByTeam_IdAndUser_Id(team.id, userId)) {
             throw BusinessException(ErrorCode.ALREADY_TEAM_MEMBER)
@@ -116,6 +127,18 @@ class TeamService(
         )
 
         return JoinTeamResponse(teamId = team.id)
+    }
+
+    @Transactional
+    fun reissueInviteCode(userId: Long, teamId: Long): InviteCodeResponse {
+        val team = findTeam(teamId)
+        assertLeader(userId, team)
+
+        team.inviteCode = generateUniqueInviteCode()
+        return InviteCodeResponse(
+            inviteCode = team.inviteCode,
+            inviteLink = buildInviteLink(team.inviteCode),
+        )
     }
 
     @Transactional
@@ -165,5 +188,10 @@ class TeamService(
             inviteCode = (1..4).map { chars.random() }.joinToString("")
         } while (teamRepository.existsByInviteCode(inviteCode))
         return inviteCode
+    }
+
+    private fun buildInviteLink(inviteCode: String): String {
+        val separator = if (inviteBaseUrl.contains("?")) "&" else "?"
+        return "$inviteBaseUrl${separator}code=$inviteCode"
     }
 }

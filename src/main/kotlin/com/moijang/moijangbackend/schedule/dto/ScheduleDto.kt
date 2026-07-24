@@ -86,10 +86,16 @@ data class BusyTime(
     val busyUserCount: Int,
 )
 
+data class FreeTime(
+    val startTime: String,
+    val endTime: String,
+)
+
 data class MergedSchedule(
     val date: String?,
     val dayOfWeek: String?,
     val busyTimes: List<BusyTime>,
+    val freeTimes: List<FreeTime>,
 )
 
 data class MergedScheduleResponse(

@@ -2,12 +2,19 @@ package com.moijang.moijangbackend.schedule.service
 
 import com.moijang.moijangbackend.global.error.BusinessException
 import com.moijang.moijangbackend.global.error.ErrorCode
+import com.moijang.moijangbackend.schedule.dto.ConfirmScheduleRequest
+import com.moijang.moijangbackend.schedule.dto.MergedSchedule
+import com.moijang.moijangbackend.schedule.dto.MergedScheduleResponse
 import com.moijang.moijangbackend.schedule.dto.PostScheduleRequest
 import com.moijang.moijangbackend.schedule.dto.PostScheduleResponse
 import com.moijang.moijangbackend.schedule.dto.ScheduleResponse
 import com.moijang.moijangbackend.schedule.entity.PersonalSchedule
 import com.moijang.moijangbackend.schedule.repository.PersonalScheduleRepository
 import com.moijang.moijangbackend.schedule.validation.ScheduleValidator
+import com.moijang.moijangbackend.team.entity.RoomType
+import com.moijang.moijangbackend.team.entity.Team
+import com.moijang.moijangbackend.team.repository.TeamRepository
+import com.moijang.moijangbackend.team.repository.TeamUserRepository
 import com.moijang.moijangbackend.user.entity.User
 import com.moijang.moijangbackend.user.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -21,6 +28,8 @@ import java.time.YearMonth
 class ScheduleService(
     private val personalScheduleRepository: PersonalScheduleRepository,
     private val userRepository: UserRepository,
+    private val teamRepository: TeamRepository,
+    private val teamUserRepository: TeamUserRepository,
 ) {
 
     @Transactional
@@ -54,12 +63,91 @@ class ScheduleService(
             userId = userId,
             start = yearMonth.atDay(1),
             end = yearMonth.atEndOfMonth(),
-        )
-        val repeatingSchedules = personalScheduleRepository.findAllByUser_IdAndIsRepeatingTrue(userId)
+        ).map(::toScheduleResponse)
 
-        return (datedSchedules + repeatingSchedules)
-            .distinctBy { it.id }
-            .map(::toScheduleResponse)
+        val expandedRepeating = personalScheduleRepository.findAllByUser_IdAndIsRepeatingTrue(userId)
+            .flatMap { schedule ->
+                val dayOfWeek = schedule.dayOfWeek ?: return@flatMap emptyList()
+                datesInMonth(yearMonth, dayOfWeek).map { date ->
+                    toScheduleResponse(schedule).copy(
+                        date = date.toString(),
+                        dayOfWeek = dayOfWeek.name,
+                    )
+                }
+            }
+
+        return (datedSchedules + expandedRepeating)
+            .sortedWith(
+                compareBy<ScheduleResponse>(
+                    { it.date },
+                    { it.startTime },
+                    { it.scheduleId },
+                ),
+            )
+    }
+
+    @Transactional(readOnly = true)
+    fun getMergedTeamSchedules(userId: Long, teamId: Long): MergedScheduleResponse {
+        val team = teamRepository.findById(teamId).orElseThrow {
+            BusinessException(ErrorCode.TEAM_NOT_FOUND)
+        }
+        if (!teamUserRepository.existsByTeam_IdAndUser_Id(teamId, userId)) {
+            throw BusinessException(ErrorCode.TEAM_FORBIDDEN)
+        }
+
+        val memberIds = teamUserRepository.findUserIdsByTeamId(teamId)
+        val mergedSchedules = when (team.roomType) {
+            RoomType.SHORT_TERM -> mergeShortTermSchedules(team, memberIds)
+            RoomType.RECURRING -> mergeRecurringSchedules(memberIds)
+        }
+
+        return MergedScheduleResponse(
+            teamId = team.id,
+            roomType = team.roomType,
+            mergedSchedules = mergedSchedules,
+        )
+    }
+
+    @Transactional
+    fun confirmTeamSchedule(userId: Long, teamId: Long, request: ConfirmScheduleRequest) {
+        val team = teamRepository.findById(teamId).orElseThrow {
+            BusinessException(ErrorCode.TEAM_NOT_FOUND)
+        }
+        if (team.leader.id != userId) {
+            throw BusinessException(ErrorCode.TEAM_FORBIDDEN)
+        }
+
+        val confirmedDate = LocalDate.parse(request.confirmedDate)
+        val startTime = LocalTime.parse(request.startTime)
+        val endTime = LocalTime.parse(request.endTime)
+        ScheduleValidator.validate(
+            isRepeating = false,
+            date = confirmedDate,
+            dayOfWeek = null,
+            startTime = startTime,
+            endTime = endTime,
+        )
+
+        personalScheduleRepository.deleteConfirmedSchedules(
+            teamId = teamId,
+            date = confirmedDate,
+            startTime = startTime,
+            endTime = endTime,
+        )
+
+        val confirmedSchedules = teamUserRepository.findAllByTeam_Id(teamId).map { teamUser ->
+            PersonalSchedule(
+                user = teamUser.user,
+                title = request.eventTitle,
+                categoryColor = TEAM_CONFIRMED_CATEGORY_COLOR,
+                isRepeating = false,
+                date = confirmedDate,
+                startTime = startTime,
+                endTime = endTime,
+                sourceTeam = team,
+            )
+        }
+        personalScheduleRepository.saveAll(confirmedSchedules)
     }
 
     @Transactional
@@ -134,10 +222,66 @@ class ScheduleService(
         )
     }
 
+    private fun datesInMonth(yearMonth: YearMonth, dayOfWeek: DayOfWeek): List<LocalDate> {
+        return generateSequence(yearMonth.atDay(1)) { date ->
+            date.plusDays(1).takeIf { it.month == yearMonth.month }
+        }.filter { it.dayOfWeek == dayOfWeek }.toList()
+    }
+
+    private fun mergeShortTermSchedules(team: Team, memberIds: List<Long>): List<MergedSchedule> {
+        if (memberIds.isEmpty()) {
+            return emptyList()
+        }
+
+        val datedSchedules = personalScheduleRepository.findAllDatedByUserIdsAndDateBetween(
+            userIds = memberIds,
+            start = team.startDate,
+            end = team.endDate,
+        ).groupBy { it.date }
+        val repeatingSchedules = personalScheduleRepository.findAllRepeatingByUserIds(memberIds)
+            .groupBy { it.dayOfWeek }
+
+        return generateSequence(team.startDate) { date ->
+            date.plusDays(1).takeIf { !it.isAfter(team.endDate) }
+        }.map { date ->
+            val schedules = datedSchedules[date].orEmpty() + repeatingSchedules[date.dayOfWeek].orEmpty()
+            val merged = ScheduleMergeService.mergeDay(schedules)
+            MergedSchedule(
+                date = date.toString(),
+                dayOfWeek = date.dayOfWeek.name,
+                busyTimes = merged.busyTimes,
+                freeTimes = merged.freeTimes,
+            )
+        }.toList()
+    }
+
+    private fun mergeRecurringSchedules(memberIds: List<Long>): List<MergedSchedule> {
+        if (memberIds.isEmpty()) {
+            return emptyList()
+        }
+
+        val schedulesByDay = personalScheduleRepository.findAllRepeatingByUserIds(memberIds)
+            .groupBy { it.dayOfWeek }
+
+        return DayOfWeek.entries.map { dayOfWeek ->
+            val merged = ScheduleMergeService.mergeDay(schedulesByDay[dayOfWeek].orEmpty())
+            MergedSchedule(
+                date = null,
+                dayOfWeek = dayOfWeek.name,
+                busyTimes = merged.busyTimes,
+                freeTimes = merged.freeTimes,
+            )
+        }
+    }
+
     private data class ParsedSchedule(
         val date: LocalDate?,
         val dayOfWeek: DayOfWeek?,
         val startTime: LocalTime,
         val endTime: LocalTime,
     )
+
+    private companion object {
+        const val TEAM_CONFIRMED_CATEGORY_COLOR = "#4A90E2"
+    }
 }

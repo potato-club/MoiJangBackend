@@ -4,6 +4,7 @@ import com.moijang.moijangbackend.global.auth.CurrentUser
 import com.moijang.moijangbackend.global.common.ApiResponse
 import com.moijang.moijangbackend.team.dto.CreateTeamRequest
 import com.moijang.moijangbackend.team.dto.CreateTeamResponse
+import com.moijang.moijangbackend.team.dto.InviteCodeResponse
 import com.moijang.moijangbackend.team.dto.JoinTeamResponse
 import com.moijang.moijangbackend.team.dto.TeamsResponse
 import com.moijang.moijangbackend.team.service.TeamService
@@ -52,10 +53,22 @@ class TeamController(
     @PostMapping("/join")
     fun joinTeam(
         @RequestParam(name = "code") code: String,
+        @RequestParam(name = "password") password: String,
     ): ApiResponse.Success<JoinTeamResponse> {
         return ApiResponse.Success(
-            data = teamService.joinTeam(CurrentUser.id(), code),
+            data = teamService.joinTeam(CurrentUser.id(), code, password),
             message = "방에 성공적으로 참여했습니다.",
+        )
+    }
+
+    @Operation(summary = "초대 코드 재발급")
+    @PostMapping("/{teamId}/invite-code")
+    fun reissueInviteCode(
+        @PathVariable teamId: Long,
+    ): ApiResponse.Success<InviteCodeResponse> {
+        return ApiResponse.Success(
+            data = teamService.reissueInviteCode(CurrentUser.id(), teamId),
+            message = "초대 코드가 재발급되었습니다.",
         )
     }
 

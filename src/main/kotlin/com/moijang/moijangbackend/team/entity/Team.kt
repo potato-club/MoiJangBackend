@@ -38,7 +38,8 @@ class Team(
     val passwordHash: String,
 
     @Column(nullable = false, unique = true)
-    val inviteCode: String,
+    var inviteCode: String,
+
 
     @Column(nullable = false)
     val startDate: LocalDate,

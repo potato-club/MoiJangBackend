@@ -69,7 +69,7 @@ class ScheduleServiceTest {
     }
 
     @Test
-    fun `월별 조회 시 단발 일정과 반복 일정을 함께 반환한다`() {
+    fun `월별 조회 시 반복 일정을 해당 월 날짜로 펼친다`() {
         personalScheduleRepository.save(
             PersonalSchedule(
                 user = user,
@@ -95,7 +95,14 @@ class ScheduleServiceTest {
 
         val result = scheduleService.getSchedules(user.id, 2026, 7)
 
-        assertEquals(2, result.size)
+        // 2026-07 Mondays: 6, 13, 20, 27 + 단발 1건
+        assertEquals(5, result.size)
+        assertEquals(4, result.count { it.isRepeating && it.title == "반복" })
+        assertEquals(
+            listOf("2026-07-06", "2026-07-13", "2026-07-20", "2026-07-27"),
+            result.filter { it.isRepeating }.map { it.date },
+        )
+        assertEquals("MONDAY", result.first { it.isRepeating }.dayOfWeek)
     }
 
     @Test
