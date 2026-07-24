@@ -34,3 +34,10 @@ spring:
 scalar:
   page-title: "Moi Jang API References"
   favicon: "/favicon.ico"
+
+# 로컬 기본 CORS. 프론트 origin 확정 시 조정
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+  invite:
+    base-url: ${INVITE_BASE_URL:http://localhost:5173/join}

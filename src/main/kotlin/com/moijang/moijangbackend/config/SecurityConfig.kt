@@ -21,6 +21,8 @@ class SecurityConfig {
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .csrf { it.disable() }
+            // 프론트 연동용. CorsConfig의 CorsConfigurationSource를 사용한다.
+            .cors { }
             .headers { headers ->
                 headers.frameOptions { it.sameOrigin() }
             }

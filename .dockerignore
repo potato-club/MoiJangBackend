@@ -1,0 +1,10 @@
+.gradle
+build
+.git
+.idea
+.vscode
+*.iml
+*.md
+.cursor
+canvases
+out

@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Profile
 class DevDataInitializer {
 
     @Bean
-    @Profile("default")
+    @Profile("default", "dev")
     fun seedDevUser(userRepository: UserRepository): CommandLineRunner {
         return CommandLineRunner {
             if (userRepository.findByEmail("test-user@gmail.com") == null) {
