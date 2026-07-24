@@ -117,6 +117,9 @@ class AvailabilityService(
             startTime = slot.startTime,
             endTime = slot.endTime,
         )
+        if (slot.date != null && (slot.date.isBefore(team.startDate) || slot.date.isAfter(team.endDate))) {
+            throw BusinessException(ErrorCode.AVAILABILITY_OUTSIDE_TEAM_PERIOD)
+        }
         return slot
     }
 

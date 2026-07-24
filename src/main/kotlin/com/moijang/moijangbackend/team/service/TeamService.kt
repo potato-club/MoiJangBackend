@@ -1,7 +1,9 @@
 package com.moijang.moijangbackend.team.service
 
+import com.moijang.moijangbackend.availability.repository.AvailabilityRepository
 import com.moijang.moijangbackend.global.error.BusinessException
 import com.moijang.moijangbackend.global.error.ErrorCode
+import com.moijang.moijangbackend.schedule.repository.PersonalScheduleRepository
 import com.moijang.moijangbackend.team.dto.CreateTeamRequest
 import com.moijang.moijangbackend.team.dto.CreateTeamResponse
 import com.moijang.moijangbackend.team.dto.InviteCodeResponse
@@ -25,6 +27,8 @@ class TeamService(
     private val teamRepository: TeamRepository,
     private val teamUserRepository: TeamUserRepository,
     private val userRepository: UserRepository,
+    private val availabilityRepository: AvailabilityRepository,
+    private val personalScheduleRepository: PersonalScheduleRepository,
     private val passwordEncoder: PasswordEncoder,
     @Value("\${app.invite.base-url:http://localhost:5173/join}")
     private val inviteBaseUrl: String,
@@ -97,6 +101,8 @@ class TeamService(
         val team = findTeam(teamId)
         assertLeader(userId, team)
 
+        availabilityRepository.deleteAllByTeam_Id(teamId)
+        personalScheduleRepository.deleteAllBySourceTeam_Id(teamId)
         teamUserRepository.deleteAllByTeam_Id(teamId)
         teamRepository.delete(team)
     }
@@ -154,6 +160,8 @@ class TeamService(
             throw BusinessException(ErrorCode.TEAM_NOT_FOUND, "팀 멤버를 찾을 수 없습니다")
         }
 
+        availabilityRepository.deleteAllByTeam_IdAndUser_Id(teamId, targetUserId)
+        personalScheduleRepository.deleteAllBySourceTeam_IdAndUser_Id(teamId, targetUserId)
         teamUserRepository.deleteByTeam_IdAndUser_Id(teamId, targetUserId)
     }
 

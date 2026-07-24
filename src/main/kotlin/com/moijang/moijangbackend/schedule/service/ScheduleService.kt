@@ -118,6 +118,9 @@ class ScheduleService(
         }
 
         val confirmedDate = LocalDate.parse(request.confirmedDate)
+        if (confirmedDate.isBefore(team.startDate) || confirmedDate.isAfter(team.endDate)) {
+            throw BusinessException(ErrorCode.SCHEDULE_OUTSIDE_TEAM_PERIOD)
+        }
         val startTime = LocalTime.parse(request.startTime)
         val endTime = LocalTime.parse(request.endTime)
         ScheduleValidator.validate(
@@ -128,12 +131,7 @@ class ScheduleService(
             endTime = endTime,
         )
 
-        personalScheduleRepository.deleteConfirmedSchedules(
-            teamId = teamId,
-            date = confirmedDate,
-            startTime = startTime,
-            endTime = endTime,
-        )
+        personalScheduleRepository.deleteAllBySourceTeam_Id(teamId)
 
         val confirmedSchedules = teamUserRepository.findAllByTeam_Id(teamId).map { teamUser ->
             PersonalSchedule(

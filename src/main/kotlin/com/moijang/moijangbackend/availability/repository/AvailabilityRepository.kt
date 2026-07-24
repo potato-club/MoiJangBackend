@@ -10,6 +10,8 @@ interface AvailabilityRepository : JpaRepository<Availability, Long> {
 
     fun findAllByTeam_IdAndUser_Id(teamId: Long, userId: Long): List<Availability>
 
+    fun deleteAllByTeam_Id(teamId: Long)
+
     fun deleteAllByTeam_IdAndUser_Id(teamId: Long, userId: Long)
 
     @Query(

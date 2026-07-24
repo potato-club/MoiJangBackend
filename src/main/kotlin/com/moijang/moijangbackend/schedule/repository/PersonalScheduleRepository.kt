@@ -2,11 +2,9 @@ package com.moijang.moijangbackend.schedule.repository
 
 import com.moijang.moijangbackend.schedule.entity.PersonalSchedule
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.time.LocalDate
-import java.time.LocalTime
 
 interface PersonalScheduleRepository : JpaRepository<PersonalSchedule, Long> {
     fun findAllByUser_IdAndDateBetween(
@@ -46,22 +44,9 @@ interface PersonalScheduleRepository : JpaRepository<PersonalSchedule, Long> {
         @Param("userIds") userIds: Collection<Long>,
     ): List<PersonalSchedule>
 
-    @Modifying(flushAutomatically = true)
-    @Query(
-        """
-        DELETE FROM PersonalSchedule schedule
-        WHERE schedule.sourceTeam.id = :teamId
-          AND schedule.date = :date
-          AND schedule.startTime = :startTime
-          AND schedule.endTime = :endTime
-        """,
-    )
-    fun deleteConfirmedSchedules(
-        @Param("teamId") teamId: Long,
-        @Param("date") date: LocalDate,
-        @Param("startTime") startTime: LocalTime,
-        @Param("endTime") endTime: LocalTime,
-    ): Int
+    fun deleteAllBySourceTeam_Id(teamId: Long)
+
+    fun deleteAllBySourceTeam_IdAndUser_Id(teamId: Long, userId: Long)
 
     fun findByIdAndUser_Id(id: Long, userId: Long): PersonalSchedule?
 }

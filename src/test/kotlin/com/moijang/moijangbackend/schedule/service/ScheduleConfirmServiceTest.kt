@@ -85,6 +85,51 @@ class ScheduleConfirmServiceTest {
     }
 
     @Test
+    fun `다른 날짜와 시간으로 재확정해도 기존 팀 일정 전체를 교체한다`() {
+        val leader = createUser("move-leader")
+        val member = createUser("move-member")
+        val team = createTeam(leader, RoomType.SHORT_TERM)
+        addMember(team, leader)
+        addMember(team, member)
+
+        scheduleService.confirmTeamSchedule(leader.id, team.id, confirmRequest(eventTitle = "기존 약속"))
+        scheduleService.confirmTeamSchedule(
+            leader.id,
+            team.id,
+            confirmRequest(
+                confirmedDate = "2026-07-20",
+                startTime = "16:00",
+                endTime = "17:00",
+                eventTitle = "변경된 약속",
+            ),
+        )
+
+        val schedules = confirmedSchedules(team.id)
+        assertEquals(2, schedules.size)
+        assertEquals(setOf("변경된 약속"), schedules.map { it.title }.toSet())
+        assertEquals(setOf(LocalDate.of(2026, 7, 20)), schedules.map { it.date }.toSet())
+        assertEquals(setOf(LocalTime.of(16, 0)), schedules.map { it.startTime }.toSet())
+    }
+
+    @Test
+    fun `팀 기간 밖의 날짜로는 일정을 확정할 수 없다`() {
+        val leader = createUser("period-leader")
+        val team = createTeam(leader, RoomType.SHORT_TERM)
+        addMember(team, leader)
+
+        val exception = assertThrows(BusinessException::class.java) {
+            scheduleService.confirmTeamSchedule(
+                leader.id,
+                team.id,
+                confirmRequest(confirmedDate = "2026-08-01"),
+            )
+        }
+
+        assertEquals(ErrorCode.SCHEDULE_OUTSIDE_TEAM_PERIOD, exception.errorCode)
+        assertEquals(0, confirmedSchedules(team.id).size)
+    }
+
+    @Test
     fun `방장이 아니면 팀 일정을 확정할 수 없다`() {
         val leader = createUser("permission-leader")
         val member = createUser("permission-member")
@@ -143,11 +188,16 @@ class ScheduleConfirmServiceTest {
         teamUserRepository.save(TeamUser(team = team, user = user))
     }
 
-    private fun confirmRequest(eventTitle: String = "확정 약속"): ConfirmScheduleRequest {
+    private fun confirmRequest(
+        confirmedDate: String = "2026-07-10",
+        startTime: String = "13:00",
+        endTime: String = "14:00",
+        eventTitle: String = "확정 약속",
+    ): ConfirmScheduleRequest {
         return ConfirmScheduleRequest(
-            confirmedDate = "2026-07-10",
-            startTime = "13:00",
-            endTime = "14:00",
+            confirmedDate = confirmedDate,
+            startTime = startTime,
+            endTime = endTime,
             eventTitle = eventTitle,
         )
     }

@@ -149,6 +149,30 @@ class AvailabilityServiceTest {
     }
 
     @Test
+    fun `단기 팀 기간 밖의 희망 날짜는 저장할 수 없다`() {
+        val leader = createUser("outside-period-availability")
+        val team = createTeam(leader, RoomType.SHORT_TERM)
+        addMember(team, leader)
+
+        val exception = assertThrows(BusinessException::class.java) {
+            availabilityService.replaceMyAvailabilities(
+                leader.id,
+                team.id,
+                listOf(
+                    AvailabilitySlotRequest(
+                        date = "2026-08-01",
+                        startTime = "13:00",
+                        endTime = "14:00",
+                    ),
+                ),
+            )
+        }
+
+        assertEquals(ErrorCode.AVAILABILITY_OUTSIDE_TEAM_PERIOD, exception.errorCode)
+        assertEquals(0, availabilityRepository.findAllByTeam_IdAndUser_Id(team.id, leader.id).size)
+    }
+
+    @Test
     fun `팀원이 아니면 희망 시간을 읽거나 저장할 수 없다`() {
         val leader = createUser("availability-owner")
         val outsider = createUser("availability-outsider")
