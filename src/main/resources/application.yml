@@ -12,6 +12,10 @@ spring:
     init:
       mode: always
 
+  session:
+    jdbc:
+      initialize-schema: always
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -25,6 +29,7 @@ spring:
       client:
         registration:
           google:
+            redirect-uri: "{baseUrl}/api/v1/oauth/code/{registrationId}"
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope:
@@ -34,6 +39,20 @@ spring:
           google:
             authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&prompt=consent
 
+logging:
+  level:
+    org.springframework.security: DEBUG
+
+server:
+  forward-headers-strategy: framework
+
 scalar:
   page-title: "Moi Jang API References"
-  favicon: "/favicon.ico"
+  favicon: "/api/favicon.ico"
+  dark-mode: true
+
+springdoc:
+  api-docs:
+    path: "/api/v3/api-docs"
+  swagger-ui:
+    path: "/api/swagger-ui.html"

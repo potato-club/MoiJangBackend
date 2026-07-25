@@ -8,52 +8,48 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException
+import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.web.cors.CorsConfiguration
-import org.springframework.web.cors.CorsConfigurationSource
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+import org.springframework.stereotype.Service
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig() {
+class SecurityConfig(
+    private val customOauth2UserService: CustomOAuth2UserService
+) {
 
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
     @Order(1)
     @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+    fun oAuthFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .securityMatcher("/api/**", "/error")
-            .cors { it.configurationSource(corsConfigurationSource()) }
+            .securityMatcher("/api/v1/oauth/**")
             .csrf { it.disable() }
-            .headers { it.frameOptions { it.sameOrigin() } }
+            .headers { it.frameOptions { config -> config.sameOrigin() } }
             .exceptionHandling {
                 it.authenticationEntryPoint { _, response, _ ->
-                    response.sendError(
-                        HttpServletResponse.SC_UNAUTHORIZED,
-                        "Unauthorized"
-                    )
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
                 }
             }
-            .authorizeHttpRequests {
-                it
-                    .requestMatchers(
-                        "/v3/api-docs/**",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/scalar/**",
-                        "/favicon.ico",
-                    ).permitAll()
-                    .anyRequest().authenticated()
-            }
             .oauth2Login {
-                it
-                    .defaultSuccessUrl("http://localhost:5173/oauth/success", true)
-                    .failureUrl("http://localhost:5173/oauth/failure")
+                it.authorizationEndpoint { endpoint ->
+                    endpoint.baseUri("/api/v1/oauth/authorize")
+                }
+                    .redirectionEndpoint { endpoint ->
+                        endpoint.baseUri("/api/v1/oauth/code/*")
+                    }
+                    .defaultSuccessUrl("/login?success", true)
+                    .failureUrl("/login?failure")
+                    .userInfoEndpoint { it.userService(customOauth2UserService) }
             }
             .logout {
-                it.logoutUrl("/api/logout")
+                it.logoutUrl("/api/v1/logout")
                     .logoutSuccessHandler { _, response, _ ->
                         response.status = HttpServletResponse.SC_OK
                         response.writer.write("{\"message\":\"Sign Out Success\"}")
@@ -67,29 +63,38 @@ class SecurityConfig() {
 
     @Order(2)
     @Bean
-    fun webFilterChain(http: HttpSecurity): SecurityFilterChain {
+    fun defaultWebFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .authorizeHttpRequests { it.anyRequest().authenticated() }
-            .oauth2Login {
-                it
-                    .defaultSuccessUrl("http://localhost:5173/oauth/success")
-                    .failureUrl("http://localhost:5173/oauth/failure")
+            .authorizeHttpRequests {
+                it.requestMatchers(
+                    "/api/v3/api-docs/**",
+                    "/scalar/**",
+                    "/api/favicon.ico",
+                ).permitAll()
+                    .anyRequest()
+                    .authenticated()
             }
+            .formLogin { it.disable() }
 
         return http.build()
     }
+}
 
+@Service
+class CustomOAuth2UserService : OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
-    @Bean
-    fun corsConfigurationSource(): CorsConfigurationSource {
-        val configuration = CorsConfiguration()
-        configuration.allowedOrigins = listOf("http://localhost:5173")
-        configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        configuration.allowedHeaders = listOf("*")
-        configuration.allowCredentials = true
+    @Throws(OAuth2AuthenticationException::class)
+    override fun loadUser(userRequest: OAuth2UserRequest): OAuth2User {
+        val delegate = DefaultOAuth2UserService()
+        val oAuth2User = delegate.loadUser(userRequest) ?: throw OAuth2AuthenticationException("사용자를 찾을 수 없습니다")
 
-        val source = UrlBasedCorsConfigurationSource()
-        source.registerCorsConfiguration("/**", configuration)
-        return source
+        val attributes = oAuth2User.attributes
+
+        val email = attributes["email"] as? String
+        val name = attributes["name"] as? String
+
+        println("로그인 시도한 사용자: $name($email)")
+
+        return oAuth2User
     }
 }
