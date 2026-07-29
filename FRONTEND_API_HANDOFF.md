@@ -2,11 +2,12 @@
 
 ## 현재 상태
 
-- 팀·일정·희망시간 API는 로컬에서 연동 가능
-- 인증은 아직 `userId=1` 고정
-- 공용 dev 서버는 Railway Organization 승인 대기 중
-- 로컬 Base URL: `http://localhost:8080`
-- API 문서: `http://localhost:8080/scalar`
+- 팀·일정·희망시간 API: **Railway 배포 완료**, Scalar 스모크 통과
+- Base URL: `https://moijangbackend-production.up.railway.app`
+- API 문서: `https://moijangbackend-production.up.railway.app/scalar`
+- 로컬 Base URL: `http://localhost:8080` / 문서: `http://localhost:8080/scalar`
+- 인증: 아직 `userId=1` 고정 (세션 OAuth는 인증 담당 작업 중). 지금은 로그인 없이 팀/일정 API 호출 가능
+- 로그인 방식: **JWT가 아니라 세션(쿠키)** 으로 진행하기로 결정됨
 
 ## 공통 형식
 
@@ -33,6 +34,8 @@
   "message": "방이 성공적으로 생성되었습니다."
 }
 ```
+
+`inviteLink`의 프론트 도메인은 Railway 변수 `INVITE_BASE_URL`로 바꿀 수 있습니다.
 
 ### 2. 방 조회
 
@@ -125,16 +128,16 @@ GET /api/v1/teams/{teamId}/availabilities
 
 ## 아직 연동하지 않는 기능
 
-- Google OAuth/JWT 로그인
-- 로그아웃
-- 친구 추가·조회·삭제
+- Google OAuth **세션** 로그인 (경로만 있음, 프론트·유저 DB 연동 미완)
+- 로그아웃 (백엔드 엔드포인트는 있으나 로그인 완성 후 사용)
+- 친구 추가·조회·삭제 (스텁/팀원 담당)
 - 친구를 통한 방 초대
 - 알림 조회·수락·거절
 
 ## 프론트에서 필요한 작업
 
-1. 로컬 API Base URL을 `http://localhost:8080`으로 설정
+1. API Base URL을 `https://moijangbackend-production.up.railway.app` 로 설정 (로컬 개발 시에는 `http://localhost:8080`)
 2. 방 가입 화면에서 `code`와 `password`를 함께 전송
 3. 병합 화면에서 `freeTimes`를 가능한 시간으로 표시
 4. 반복 일정 항목에는 “반복 일정 전체 수정/삭제”임을 표시
-5. dev 서버 URL은 Railway 배포 완료 후 교체
+5. 로그인 연동은 세션 쿠키 기준으로 인증 담당과 맞춘 뒤 진행 (`credentials: 'include'` 등)
