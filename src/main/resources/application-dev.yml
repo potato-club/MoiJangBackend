@@ -1,12 +1,11 @@
-# Railway 등 배포 환경용 프로필 (MySQL)
-# 활성화: SPRING_PROFILES_ACTIVE=dev
+# Railway 배포용 프로필
+# Railway Variables: SPRING_PROFILES_ACTIVE=dev
 server:
   port: ${PORT:8080}
+  forward-headers-strategy: framework
 
 spring:
   datasource:
-    # Railway MySQL을 서비스로 연결하면 MYSQLHOST 등이 자동 주입된다.
-    # 직접 넣을 때는 SPRING_DATASOURCE_* 를 쓰면 된다.
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${MYSQLHOST:localhost}:${MYSQLPORT:3306}/${MYSQLDATABASE:railway}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul}
     username: ${SPRING_DATASOURCE_USERNAME:${MYSQLUSER:root}}
     password: ${SPRING_DATASOURCE_PASSWORD:${MYSQLPASSWORD:}}
@@ -15,6 +14,14 @@ spring:
   h2:
     console:
       enabled: false
+
+  sql:
+    init:
+      mode: never
+
+  session:
+    jdbc:
+      initialize-schema: always
 
   jpa:
     hibernate:
@@ -30,13 +37,20 @@ spring:
       client:
         registration:
           google:
+            redirect-uri: "{baseUrl}/api/v1/oauth/code/{registrationId}"
             client-id: ${GOOGLE_CLIENT_ID:GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET:GOOGLE_CLIENT_SECRET}
             scope:
               - profile
               - email
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&prompt=consent
 
-# 쉼표로 구분. 프론트 origin이 확정되면 env CORS_ALLOWED_ORIGINS로 덮어쓸 수 있음
+logging:
+  level:
+    org.springframework.security: INFO
+
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
