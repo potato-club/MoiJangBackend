@@ -6,8 +6,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
@@ -22,8 +20,7 @@ class SecurityConfig(
     private val customOauth2UserService: CustomOAuth2UserService
 ) {
 
-    @Bean
-    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
+    // PasswordEncoder는 PasswordEncoderConfig에서만 정의한다. (팀방 비밀번호 해시와 공유)
 
     @Order(1)
     @Bean
@@ -31,6 +28,7 @@ class SecurityConfig(
         http
             .securityMatcher("/api/v1/oauth/**")
             .csrf { it.disable() }
+            .cors { }
             .headers { it.frameOptions { config -> config.sameOrigin() } }
             .exceptionHandling {
                 it.authenticationEntryPoint { _, response, _ ->
@@ -65,11 +63,17 @@ class SecurityConfig(
     @Bean
     fun defaultWebFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
+            .csrf { it.disable() }
+            .cors { }
             .authorizeHttpRequests {
                 it.requestMatchers(
-                    "/api/v3/api-docs/**",
+                    "/api/**",
+                    "/h2-console/**",
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
                     "/scalar/**",
-                    "/api/favicon.ico",
+                    "/favicon.ico",
                 ).permitAll()
                     .anyRequest()
                     .authenticated()
