@@ -16,7 +16,7 @@ class User(
     val email: String,
 
     @Column(nullable = false)
-    val nickname: String,
+    var nickname: String,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -27,7 +27,7 @@ class User(
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    val role: UserRole = UserRole.USER,
+    var role: UserRole = UserRole.USER,
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

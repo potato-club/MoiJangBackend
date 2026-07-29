@@ -40,4 +40,4 @@ out/
 .kotlin
 
 ### Local ###
-**/application-local.yml
+**/.env.local
