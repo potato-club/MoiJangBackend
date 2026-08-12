@@ -1,6 +1,7 @@
-package com.moijang.moijangbackend.friend.controller
+package com.moijang.moijangbackend.friend
 
-import com.moijang.moijangbackend.friend.dto.Friend
+import com.moijang.moijangbackend.friend.dto.FriendDto
+import com.moijang.moijangbackend.friend.repository.FriendRepository
 import com.moijang.moijangbackend.global.auth.CurrentUser
 import com.moijang.moijangbackend.global.common.ApiResponse
 import com.moijang.moijangbackend.global.error.BusinessException
@@ -23,12 +24,7 @@ import org.springframework.web.bind.annotation.RestController
 @Tag(name = "Friend API")
 @RestController
 @RequestMapping("/api/v1/friends")
-class FriendController {
-
-    private val stubFriends = listOf(
-        Friend(2, "김철수", "chulsoo@gmail.com"),
-        Friend(3, "이영희", "younghee@gmail.com"),
-    )
+class FriendController(private val friendRepository: FriendRepository) {
 
     @Operation(summary = "친구 요청")
     @PostMapping
@@ -46,9 +42,17 @@ class FriendController {
 
     @Operation(summary = "친구 목록 조회")
     @GetMapping
-    fun getFriends(): ApiResponse.Success<List<Friend>> {
-        CurrentUser.id()
-        return ApiResponse.Success(data = stubFriends)
+    fun getFriends(): ApiResponse.Success<List<FriendDto>> {
+        val id = CurrentUser.id()
+        val friends = friendRepository.findByUserId(id)
+        val result = friends.map {
+            FriendDto(
+                it.friend.id,
+                it.friend.nickname,
+                it.createdAt
+            )
+        }
+        return ApiResponse.Success(data = result)
     }
 
     @Operation(summary = "친구 삭제")
@@ -56,12 +60,12 @@ class FriendController {
     fun deleteFriend(
         @PathVariable friendId: Long,
     ): ApiResponse.Ok {
-        CurrentUser.id()
-
-        if (stubFriends.none { it.friendId == friendId }) {
-            throw BusinessException(ErrorCode.FRIEND_NOT_FOUND)
+        val userId = CurrentUser.id()
+        if (!friendRepository.existsByUserIdAndFriendId(userId, friendId)) {
+            throw BusinessException(ErrorCode.FRIEND_NOT_FOUND);
         }
+        friendRepository.deleteByUserIdAndFriendId(CurrentUser.id(), friendId)
 
-        return ApiResponse.Ok("친구 삭제 완료")
+        return ApiResponse.Ok("친구 삭제함")
     }
 }

@@ -18,19 +18,18 @@ class DevDataInitializer {
 
     @Bean
     @Profile("default", "dev")
-    fun seedDevUser(userRepository: UserRepository): CommandLineRunner {
-        return CommandLineRunner {
-            if (userRepository.findByEmail("test-user@gmail.com") == null) {
-                userRepository.save(
-                    User(
-                        email = "test-user@gmail.com",
-                        nickname = "하영",
-                        provider = OAuthProvider.GOOGLE,
-                        providerId = "dev-test-user",
-                        role = UserRole.USER,
-                    ),
-                )
-            }
+    fun seedDevUser(userRepository: UserRepository): CommandLineRunner = CommandLineRunner {
+        if (!userRepository.existsByEmail("test-user@gmail.com")) {
+            userRepository.save(
+                User(
+                    email = "test-user@gmail.com",
+                    nickname = "하영",
+                    provider = OAuthProvider.GOOGLE,
+                    providerId = "dev-test-user",
+                    role = UserRole.USER,
+                    picture = null
+                ),
+            )
         }
     }
 }

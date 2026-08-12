@@ -18,6 +18,9 @@ class User(
     @Column(nullable = false)
     var nickname: String,
 
+    @Column(nullable = true)
+    var picture: String?,
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     val provider: OAuthProvider,
