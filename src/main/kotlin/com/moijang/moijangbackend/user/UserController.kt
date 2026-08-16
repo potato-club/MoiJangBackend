@@ -55,4 +55,17 @@ class UserController(
             )
         )
     }
+
+    @Operation(summary = "이름으로 사용자 검색")
+    @GetMapping("/search/{nickname}")
+    fun searchUserByNickname(@PathVariable nickname: String): ApiResponse<List<UserDto>> {
+        val queryResult = userRepository.findByNicknameContainingIgnoreCase(nickname)
+        val result = queryResult.map { UserDto(
+            it.id.toString(),
+            it.email,
+            it.nickname,
+            it.picture,
+        ) }
+        return ApiResponse.Success(result)
+    }
 }

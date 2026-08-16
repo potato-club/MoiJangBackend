@@ -14,4 +14,6 @@ interface UserRepository : JpaRepository<User, Long> {
     fun findByProviderAndProviderId(provider: OAuthProvider, providerId: String): User?
 
     fun existsByEmail(email: String): Boolean
+
+    fun findByNicknameContainingIgnoreCase(nickname: String): List<User>
 }
