@@ -1,6 +1,6 @@
 package com.moijang.moijangbackend.user.dto
 
-data class GetMyDataResponse(
+data class UserDto(
     val userId: String,
     val email: String,
     val name: String,

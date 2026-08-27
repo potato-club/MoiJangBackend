@@ -46,15 +46,6 @@ class SecurityConfig(
                     .failureUrl("/login?failure")
                     .userInfoEndpoint { it.userService(customOauth2UserService) }
             }
-            .logout {
-                it.logoutUrl("/api/v1/logout")
-                    .logoutSuccessHandler { _, response, _ ->
-                        response.status = HttpServletResponse.SC_OK
-                        response.writer.write("{\"message\":\"Sign Out Success\"}")
-                    }
-                    .invalidateHttpSession(true)
-                    .deleteCookies("JSESSIONID")
-            }
 
         return http.build()
     }
@@ -79,6 +70,16 @@ class SecurityConfig(
                     .authenticated()
             }
             .formLogin { it.disable() }
+            .logout {
+                it.logoutUrl("/api/v1/logout")
+                    .logoutSuccessHandler { _, response, _ ->
+                        response.status = HttpServletResponse.SC_OK
+                        response.writer.write("{\"message\":\"Sign Out Success\"}")
+                    }
+                    .invalidateHttpSession(true)
+                    .deleteCookies("JSESSIONID")
+                    .deleteCookies("SESSION")
+            }
 
         return http.build()
     }
@@ -90,14 +91,12 @@ class CustomOAuth2UserService : OAuth2UserService<OAuth2UserRequest, OAuth2User>
     @Throws(OAuth2AuthenticationException::class)
     override fun loadUser(userRequest: OAuth2UserRequest): OAuth2User {
         val delegate = DefaultOAuth2UserService()
-        val oAuth2User = delegate.loadUser(userRequest) ?: throw OAuth2AuthenticationException("사용자를 찾을 수 없습니다")
+        val oAuth2User = delegate.loadUser(userRequest)
 
         val attributes = oAuth2User.attributes
 
         val email = attributes["email"] as? String
         val name = attributes["name"] as? String
-
-        println("로그인 시도한 사용자: $name($email)")
 
         return oAuth2User
     }

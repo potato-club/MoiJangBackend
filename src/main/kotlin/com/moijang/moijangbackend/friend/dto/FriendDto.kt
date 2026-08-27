@@ -1,7 +1,7 @@
 package com.moijang.moijangbackend.friend.dto
 
-data class Friend(
+data class FriendDto(
     val friendId: Long,
     val name: String,
-    val email: String,
+    val createdAt: Long,
 )

@@ -9,7 +9,11 @@ interface UserRepository : JpaRepository<User, Long> {
 
     override fun findById(id: Long): Optional<User>
 
-    fun findByEmail(email: String): User?
+    fun findByEmail(email: String): User
 
     fun findByProviderAndProviderId(provider: OAuthProvider, providerId: String): User?
+
+    fun existsByEmail(email: String): Boolean
+
+    fun findByNicknameContainingIgnoreCase(nickname: String): List<User>
 }
